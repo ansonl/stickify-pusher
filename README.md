@@ -1,11 +1,13 @@
 Stickify Pusher
 ===================
-View your Microsoft Windows Sticky Notes anywhere. 
+View your Microsoft Windows Sticky Notes anywhere.
 
- - Pre-built executable is in the `dist` folder if you do not want to compile Stickify Pusher yourself.  
+ - **Pre-built executable is in the `dist` folder if you do not want to compile Stickify Pusher yourself.**  
 	 - This executable connects to the *stickify.herokuapp.com* server. 
-		 - Server will wipe nicknames and associated sticky notes if Sticky Pusher has not contacted the server in 24 hours. 
+		 - Provided server is set to wipe nicknames and associated sticky notes if Sticky Pusher has not contacted the server in 24 hours. 
+		 - [Stickify Server source](https://github.com/ansonl/stickify-server). 
  - You may use the [Stickify web app](https://stickify.gq) to view sticky notes on your phone/other computer. 
+	 - [Stickify web app source](https://github.com/ansonl/stickify-web-app). 
 
 Build to executable
 -------------
