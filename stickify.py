@@ -24,8 +24,9 @@ username = ''
 passcode = ''
 
 port = '8080'
-server = 'http://mich302csd17u' + ':' + '8080'
+#server = 'http://mich302csd17u' + ':' + '8080'
 server = 'https://stickify.herokuapp.com'
+#server = 'http://uakk62822589.ansonl.koding.io:8080'
 
 sendFileTimer = None
 
@@ -77,7 +78,15 @@ def sendFile():
     home = expanduser("~")
     home += "\AppData\Roaming\Microsoft\Sticky Notes\StickyNotes.snt"
 
-    assert olefile.isOleFile(home)
+    try:
+    	assert olefile.isOleFile(home)
+    except (AssertionError,FileNotFoundError) as e:
+    	root.deiconify()
+    	if app is not None:
+	      app.infoLabel['text'] = "No Sticky Notes file found at " + home + ".\nYou need to run the Sticky Notes application for the first time to create a Sticky Notes file."
+	      app.infoLabel['fg'] = 'red'
+      #bring app to foreground
+      
 
     ole = olefile.OleFileIO(home)
 
@@ -227,7 +236,7 @@ class Application(tk.Frame):
 
         self.infoLabel = tk.Label(self, text='No nick/pass set',
                                   justify=tk.LEFT, anchor=tk.W,
-                                  wraplength=128)
+                                  wraplength=160)
         self.infoLabel.grid(row=3, column=0, rowspan=2, columnspan=2,
                             sticky=tk.N + tk.S + tk.E + tk.W)
 

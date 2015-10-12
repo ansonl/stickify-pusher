@@ -2,8 +2,10 @@ Stickify Pusher
 ===================
 View your Microsoft Windows Sticky Notes anywhere. 
 
-----------
-
+ - Pre-built executable is in the `dist` folder if you do not want to compile Stickify Pusher yourself.  
+	 - This executable connects to the *stickify.herokuapp.com* server. 
+		 - Server will wipe nicknames and associated sticky notes if Sticky Pusher has not contacted the server in 24 hours. 
+ - You may use the [Stickify web app](https://stickify.gq) to view sticky notes on your phone/other computer. 
 
 Build to executable
 -------------
@@ -23,6 +25,7 @@ Move it to your user startup folder so that it runs on login.
 
 User startup folder may vary with your setup, some examples:
 
- - **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Starup**
- - **%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Starup**
+ - **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
+ - **%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
 
+The executable is meant to be run on Windows. 
