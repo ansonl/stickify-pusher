@@ -1,6 +1,7 @@
 Stickify Pusher
 ===================
 ![Stickify logo](https://raw.githubusercontent.com/ansonl/stickify-pusher/master/stickify-logo-256.png)
+
 View your Microsoft Windows Sticky Notes anywhere.
 
  - **Pre-built executable is in the `dist` folder if you do not want to compile Stickify Pusher yourself.**  
