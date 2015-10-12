@@ -1,5 +1,6 @@
 Stickify Pusher
 ===================
+![Stickify logo](https://raw.githubusercontent.com/ansonl/stickify-pusher/master/stickify-logo-256.png)
 View your Microsoft Windows Sticky Notes anywhere.
 
  - **Pre-built executable is in the `dist` folder if you do not want to compile Stickify Pusher yourself.**  
@@ -8,6 +9,7 @@ View your Microsoft Windows Sticky Notes anywhere.
 		 - [Stickify Server source](https://github.com/ansonl/stickify-server). 
  - You may use the [Stickify web app](https://stickify.gq) to view sticky notes on your phone/other computer. 
 	 - [Stickify web app source](https://github.com/ansonl/stickify-web-app). 
+
 
 Build to executable
 -------------
