@@ -38,3 +38,8 @@ pyinstaller --onefile --noconsole --clean --icon logo.ico stickify.py
 Notes
 -------------
 Sticky Pusher is meant to be run on Windows. 
+
+Acknowledgements
+-------------
+[olefile](http://www.decalage.info/python/olefileio) for reading the MS Sticky OLE file format - [license](https://bitbucket.org/decalage/olefileio_pl/wiki/License).
+[Unsplash It](https://unsplash.it) for the randomized background picture in the Stickify Web App. 
