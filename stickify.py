@@ -108,6 +108,7 @@ def sendFile():
             # create file stream
             handle = ole.openstream(streamList[streamIndex])
             text = handle.read()
+            ole.close()
             #print text
             # base64 encode
             base64Encoded = base64.b64encode(text)
