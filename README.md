@@ -52,3 +52,8 @@ Acknowledgements
 [extract_rtf.py](https://gist.github.com/gilsondev/7c1d2d753ddb522e7bc22511cfb08676) the base Rich Text Format to plain text extracting regex. 
 
 [Unsplash It](https://unsplash.it) for the randomized background picture in the Stickify Web App. 
+
+License
+-------------
+OLEFile's license can be found [here](https://bitbucket.org/decalage/olefileio_pl/wiki/License).
+All other parts of Stickify are made available under MIT License. 
