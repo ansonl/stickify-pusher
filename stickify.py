@@ -3,6 +3,8 @@
 
 #pyinstaller --onefile --noconsole --clean stickify.py
 #pyinstaller --onefile --noconsole --clean --icon logo.ico stickify.py
+#a.datas += [ ('logo.ico', 'C:\\Users\\ansonl\\development\\stickify-pusher\\logo.ico', 'DATA')]
+#pyinstaller stickify.spec
 import olefile
 
 import sys
@@ -11,6 +13,7 @@ import re
 import requests
 import base64, zlib
 import time
+import datetime
 import threading
 import tempfile
 from os.path import expanduser
@@ -20,17 +23,37 @@ from tkinter import messagebox
 
 import pickle
 
+import extract_rtf
+
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEvent
+
 username = ''
 passcode = ''
-
-port = '8080'
 #server = 'http://mich302csd17u' + ':' + '8080'
 server = 'https://stickify.herokuapp.com'
 #server = 'http://uakk62822589.ansonl.koding.io:8080'
 
-sendFileTimer = None
+#watchdog observer object
+observer = None
+#watchdog handler object
+watchHandler = None
 
-updateLoop = False
+#observer last updated date
+lastUpdated = None
+#observer polling timer
+lastUpdateCheckTimer = None
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def tryToRegister():
     print("Checking username " + username)
@@ -58,25 +81,71 @@ def tryToRegister():
         print('Connection error:', e)
         return "Update to " + server + " failed"
 
+class WatchEventHandler(FileSystemEventHandler):
+    def on_modified(self, event):
+        global lastUpdated
+        global watchHandler
+        global lastUpdateCheckTimer
+        #print("Directory modified")
+        if lastUpdated is not None:
+            if (datetime.datetime.now()-lastUpdated).total_seconds() >= 5:
+                print("Last update > 5 seconds ago, sending files.")
+                lastUpdated = datetime.datetime.now()
+                updateUISendFile()
+            else:
+                print("Last update < 5 seconds, will check back...")
+                
+                if lastUpdateCheckTimer is not None:
+                    lastUpdateCheckTimer.cancel()
+                lastUpdateCheckTimer = threading.Timer(5, lambda:watchHandler.on_modified(FileSystemEvent(getSNTDirectory())))
+                lastUpdateCheckTimer.start()
+
+        if lastUpdated is None:
+            print("Updating")
+            lastUpdated = datetime.datetime.now()
+            updateUISendFile()
+
+def getSNTDirectory():
+    home = expanduser("~")
+    home += "\AppData\Roaming\Microsoft\Sticky Notes\\"
+    return home
+
+def getSNTFilePath():
+    return getSNTDirectory() + "StickyNotes.snt"
+
+def setupFileObserver():
+    global observer
+    global watchHandler
+
+    if observer is not None:
+        print("Stopping existing watchdog observer...")
+        observer.stop()
+        observer.join()
+
+    print("Set watchdog observer on " + getSNTFilePath())
+    #setup watchdog
+    watchHandler = WatchEventHandler()
+    observer = Observer()
+    observer.schedule(watchHandler, path=getSNTDirectory(), recursive=False)
+    observer.start()
+
 def updateUISendFile():
     valid = sendFile()
     if valid == 0:
         app.infoLabel['text'] = 'Updated ' +  time.strftime("%a %H:%M:%S")
         app.infoLabel['fg'] = 'black'
     else:
-        self.infoLabel['text'] = valid
+        app.infoLabel['text'] = valid
+
+
 
 def sendFile():
-    global sendFileTimer
-    sendFileTimer = threading.Timer(10, updateUISendFile)
-    sendFileTimer.start()
 
     #bring app to foreground
     #root.deiconify()
 
     
-    home = expanduser("~")
-    home += "\AppData\Roaming\Microsoft\Sticky Notes\StickyNotes.snt"
+    home = getSNTFilePath()
 
     try:
     	assert olefile.isOleFile(home)
@@ -105,14 +174,29 @@ def sendFile():
             - 1:][0] is '0':
             #print("valid stream with directory 0: "+ streamList[streamIndex])
             # print(ole.get_size(streamList[streamIndex]))
+
             # create file stream
             handle = ole.openstream(streamList[streamIndex])
             text = handle.read()
             ole.close()
-            #print text
-            # base64 encode
-            base64Encoded = base64.b64encode(text)
 
+            #find last index of actual closed bracket pair
+            textDecode = text.decode("utf-8")
+            openBracketsUnclosed = -1
+            for searchIndex in range(len(textDecode)):
+                if textDecode[searchIndex] == '{':
+                    if openBracketsUnclosed == -1:
+                        openBracketsUnclosed = 0
+                    openBracketsUnclosed += 1
+                if textDecode[searchIndex] == '}':
+                    openBracketsUnclosed -= 1
+                if openBracketsUnclosed == 0:
+                    print(searchIndex)
+                    break;
+            # base64 encode
+            base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
+            #ascii preview with viewing as string so we can see newline and carriage return
+            #print(textDecode.encode('ascii'))
             # create payload
             payload = {
                 'user': username,
@@ -131,8 +215,11 @@ def sendFile():
                     app.infoLabel['fg'] = 'black'
                     app.setUserPass['text'] = 'Update info'
                     counter = counter + 1
+
+
+
                 else:
-                    print('Fail update note at index {0} {0}'.format(counter, r.text))
+                    print('Failed to update note at index {0} {0}'.format(counter, r.text))
                     app.infoLabel['text'] = r.text
                     app.infoLabel['fg'] = 'red'
                     #bring app to foreground
@@ -171,18 +258,16 @@ class Application(tk.Frame):
         self.createWidgets()
 
         if userSet is True:
-            self.setUserPassClick()
+            #register user in background
+            t = threading.Timer(0, lambda:self.setUserPassClick())
+            t.start()
 
     def setUserPassClick(self):
         global username 
         global passcode
+        global lastUpdated
         username = self.usernameEntry.get()
         passcode = self.passcodeEntry.get()
-
-        global sendFileTimer
-        if sendFileTimer is not None:
-            print("Cancelled existing timer")
-            sendFileTimer.cancel()
 
         valid = tryToRegister()
         if valid == 0:
@@ -197,8 +282,19 @@ class Application(tk.Frame):
             f = open(credsFilepath, "wb")
             pickle.dump(shelf, f)
 
-            sendFileTimer = threading.Timer(0, lambda:updateUISendFile())
-            sendFileTimer.start()
+            
+            
+            #send stickies to server initially
+            #wait 0.5 seconds for "app" to finish loading or else ui changes will crash
+            lastUpdated = datetime.datetime.now()
+            s = threading.Timer(0.5, lambda:updateUISendFile())
+            s.start()
+
+            #only send on file modification
+            setupFileObserver()
+
+            #sendFileTimer = threading.Timer(0, lambda:updateUISendFile())
+            #sendFileTimer.start()
 
             #minimize after 1 second
             t = threading.Timer(1, lambda:root.iconify())
@@ -224,7 +320,7 @@ class Application(tk.Frame):
 
         self.passcodeLabel = tk.Label(self, text='PIN', width=12, anchor=tk.W)
         self.passcodeLabel.grid(row=1, column=0, sticky=tk.W)
-        self.passcodeEntry = tk.Entry(self, width=12)
+        self.passcodeEntry = tk.Entry(self, width=12, show="⚿")
         self.passcodeEntry.delete(0, tk.END)
         self.passcodeEntry.insert(0, passcode)
         self.passcodeEntry.grid(row=1, column=1)
@@ -268,18 +364,15 @@ root.resizable(width=tk.FALSE, height=tk.FALSE)
 
 #make transparent app icon on the fly http://stackoverflow.com/a/18277350
 #if building on OSX, you may need to comment this out
-ICON = zlib.decompress(base64.b64decode('eJxjYGAEQgEBBiDJwZDBy'
-    'sAgxsDAoAHEQCEGBQaIOAg4sDIgACMUj4JRMApGwQgF/ykEAFXxQRc='))
-_, ICON_PATH = tempfile.mkstemp()
-with open(ICON_PATH, 'wb') as icon_file:
-    icon_file.write(ICON)
-root.iconbitmap(default=ICON_PATH)
+#ICON = zlib.decompress(base64.b64decode('eJxjYGAEQgEBBiDJwZDBy'
+#    'sAgxsDAoAHEQCEGBQaIOAg4sDIgACMUj4JRMApGwQgF/ykEAFXxQRc='))
+#_, ICON_PATH = tempfile.mkstemp()
+root.iconbitmap(resource_path("logo.ico"))
 
 app = Application(master=root)
 app.mainloop()
 
-print("Window closed, cleaning up timer")
-if sendFileTimer is not None:
-    print("Cancelled existing timer")
-    sendFileTimer.cancel()
+print("Window closed, stopping observer")
+observer.stop()
+observer.join()
 print("App quit")

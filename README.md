@@ -16,7 +16,6 @@ View your Microsoft Windows [Sticky Notes](http://windows.microsoft.com/en-us/wi
  - You may use the [Stickify web app](https://stickify.gq) to view sticky notes on your phone/other computer. 
 	 - [Stickify web app source](https://github.com/ansonl/stickify-web-app). 
 
-
 Build to executable
 -------------
 - Install Pyinstaller and required Python modules with `pip`.
@@ -27,20 +26,27 @@ pip install requests==2.5.1
 ```
 - Build `stickify.py`, `stickify.exe` will be located in the created `dist` directory.
 ```
+pyinstaller stickify.spec
+```
+
+Alternatively, you can try
+```
 pyinstaller --onefile --noconsole --clean --icon logo.ico stickify.py
 ```
 - Move it to your user startup folder so that it runs on login. 
 
   - User startup folder may vary with your setup, some examples:
-	  -  **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
+	  - **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
 	  - **%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
 
 Notes
 -------------
-Sticky Pusher is meant to be run on Windows. 
+Sticky Pusher is meant to be run on Windows 7 and up. 
 
 Acknowledgements
 -------------
 [olefile](http://www.decalage.info/python/olefileio) for reading the MS Sticky OLE file format - [license](https://bitbucket.org/decalage/olefileio_pl/wiki/License).
+
+[extract_rtf.py](https://gist.github.com/gilsondev/7c1d2d753ddb522e7bc22511cfb08676) the base Rich Text Format to plain text extracting regex. 
 
 [Unsplash It](https://unsplash.it) for the randomized background picture in the Stickify Web App. 

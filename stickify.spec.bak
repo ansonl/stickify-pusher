@@ -1,0 +1,28 @@
+# -*- mode: python -*-
+
+block_cipher = None
+
+
+a = Analysis(['stickify.exe'],
+             pathex=['C:\\Users\\ansonl\\development\\stickify-pusher'],
+             binaries=None,
+             datas=None,
+             hiddenimports=[],
+             hookspath=[],
+             runtime_hooks=[],
+             excludes=[],
+             win_no_prefer_redirects=False,
+             win_private_assemblies=False,
+             cipher=block_cipher)
+pyz = PYZ(a.pure, a.zipped_data,
+             cipher=block_cipher)
+exe = EXE(pyz,
+          a.scripts,
+          exclude_binaries=True,
+          name='stickify',
+          debug=False,
+          strip=False,
+          upx=True,
+          console=True )
+
+a.datas += [ ('stickify-logo.png', '.\\data\\stickify-logo.png', 'DATA')]
