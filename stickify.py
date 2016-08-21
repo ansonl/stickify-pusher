@@ -45,6 +45,9 @@ lastUpdated = None
 #observer polling timer
 lastUpdateCheckTimer = None
 
+#ping server timer
+pingServerTimer = None
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -54,6 +57,10 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+def pingServerToKeepAccount():
+    print("Pinging server")
+    updateUISendFile()
 
 def tryToRegister():
     print("Checking username " + username)
@@ -81,6 +88,8 @@ def tryToRegister():
         print('Connection error:', e)
         return "Update to " + server + " failed"
 
+
+
 class WatchEventHandler(FileSystemEventHandler):
     def on_modified(self, event):
         global lastUpdated
@@ -97,6 +106,7 @@ class WatchEventHandler(FileSystemEventHandler):
                 
                 if lastUpdateCheckTimer is not None:
                     lastUpdateCheckTimer.cancel()
+                #schedule a handler event in 5 seconds
                 lastUpdateCheckTimer = threading.Timer(5, lambda:watchHandler.on_modified(FileSystemEvent(getSNTDirectory())))
                 lastUpdateCheckTimer.start()
 
@@ -137,7 +147,12 @@ def updateUISendFile():
     else:
         app.infoLabel['text'] = valid
 
-
+    #schedule a server ping in <24hrs
+    global pingServerTimer
+    if pingServerTimer is not None:
+        pingServerTimer.cancel()
+    pingServerTimer = threading.Timer(86300, lambda:pingServerToKeepAccount())
+    pingServerTimer.start()
 
 def sendFile():
 
@@ -191,7 +206,7 @@ def sendFile():
                 if textDecode[searchIndex] == '}':
                     openBracketsUnclosed -= 1
                 if openBracketsUnclosed == 0:
-                    print(searchIndex)
+                    #print(searchIndex)
                     break;
             # base64 encode
             base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
@@ -359,20 +374,20 @@ class Application(tk.Frame):
 root = tk.Tk()
 root.title('Stickify')
 root.resizable(width=tk.FALSE, height=tk.FALSE)
-
-
-
-#make transparent app icon on the fly http://stackoverflow.com/a/18277350
-#if building on OSX, you may need to comment this out
-#ICON = zlib.decompress(base64.b64decode('eJxjYGAEQgEBBiDJwZDBy'
-#    'sAgxsDAoAHEQCEGBQaIOAg4sDIgACMUj4JRMApGwQgF/ykEAFXxQRc='))
-#_, ICON_PATH = tempfile.mkstemp()
 root.iconbitmap(resource_path("logo.ico"))
 
 app = Application(master=root)
-app.mainloop()
+root.mainloop()
+print("Window closed")
 
-print("Window closed, stopping observer")
+#Cancel pending timers so that the app will quit
+if lastUpdateCheckTimer is not None:
+    lastUpdateCheckTimer.cancel()
+if pingServerTimer is not None:
+    pingServerTimer.cancel()
+
+#Cancel watchdog observer
 observer.stop()
 observer.join()
+
 print("App quit")
