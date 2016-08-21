@@ -34,9 +34,11 @@ Alternatively, you can try
 pyinstaller --onefile --noconsole --clean --icon logo.ico stickify.py
 ```
 - Move it to your user startup folder so that it runs on login. 
+  - Navigate to **%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup** like below to get to your startup folder. 
+  ![Windows 10 Explorer User Startup Folder Navigation](https://raw.githubusercontent.com/ansonl/stickify-pusher/master/images/win10-explorer-startup.png)
 
   - User startup folder may vary with your setup, some examples:
-	  - **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
+	  - **C:\Users\USERNAME\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup** *Replace **USERNAME** with your username.*
 	  - **%USERPROFILE%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup**
 
 Notes
