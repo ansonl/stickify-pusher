@@ -7,6 +7,8 @@
 #pyinstaller stickify.spec
 import olefile
 
+import sqlite3
+
 import sys
 import os.path
 import re
@@ -106,8 +108,13 @@ class WatchEventHandler(FileSystemEventHandler):
                 
                 if lastUpdateCheckTimer is not None:
                     lastUpdateCheckTimer.cancel()
+
+                monitorDir = getSQLiteDirectory()
+                if os.path.exists(monitorDir) is False:
+                    monitorDir = getSNTDirectory()
+
                 #schedule a handler event in 5 seconds
-                lastUpdateCheckTimer = threading.Timer(5, lambda:watchHandler.on_modified(FileSystemEvent(getSNTDirectory())))
+                lastUpdateCheckTimer = threading.Timer(5, lambda:watchHandler.on_modified(FileSystemEvent(monitorDir)))
                 lastUpdateCheckTimer.start()
 
         if lastUpdated is None:
@@ -122,6 +129,14 @@ def getSNTDirectory():
 
 def getSNTFilePath():
     return getSNTDirectory() + "StickyNotes.snt"
+
+def getSQLiteDirectory():
+	home = expanduser("~")
+	home += "\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\LocalState\\"
+	return home
+
+def getSQLiteFilePath():
+    return getSQLiteDirectory() + "plum.sqlite"
 
 def setupFileObserver():
     global observer
@@ -154,96 +169,123 @@ def updateUISendFile():
     pingServerTimer = threading.Timer(86300, lambda:pingServerToKeepAccount())
     pingServerTimer.start()
 
+def sendNoteUpdate(base64Encoded, counter):
+	# create payload
+	payload = {
+	    'user': username,
+	    'passcode': passcode,
+	    'number': counter,
+	    'data': base64Encoded,
+	    }
+
+	try:
+	    # make POST request with payload
+	    r = requests.post(server+'/update',data=payload,timeout=5)
+	    #print((r.status_code, r.reason))
+	    if r.text[0:1] == '0':
+	        print(('Sent note at index {0} success'.format(counter)))
+	        app.infoLabel['text'] = 'Updated'
+	        app.infoLabel['fg'] = 'black'
+	        app.setUserPass['text'] = 'Update info'
+
+	    else:
+	        print('Failed to update note at index {0} {0}'.format(counter, r.text))
+	        app.infoLabel['text'] = r.text
+	        app.infoLabel['fg'] = 'red'
+	        #bring app to foreground
+	        root.deiconify()
+	        return r.text
+	except requests.exceptions.RequestException as e:
+	    #messagebox.showerror("Error sending request to " + server, e)
+	    print(e)
+	    #server timeout on first note send prevented other notes from sending?
+	    #return "Update to " + server + " failed"
+
 def sendFile():
 
     #bring app to foreground
     #root.deiconify()
 
-    
-    home = getSNTFilePath()
-
-    try:
-    	assert olefile.isOleFile(home)
-    except (AssertionError,FileNotFoundError) as e:
-    	root.deiconify()
-    	if app is not None:
-	      app.infoLabel['text'] = "No Sticky Notes file found at " + home + ".\nYou need to run the Sticky Notes application for the first time to create a Sticky Notes file."
-	      app.infoLabel['fg'] = 'red'
-      #bring app to foreground
-      
-
-    ole = olefile.OleFileIO(home)
-
-    streamList = ole.listdir()
+    #check for new sticky notes program from anniversary update
+    newStickyNoteApp = None
+    home = getSQLiteFilePath()
+    if os.path.exists(home):
+    	print("Found new sticky notes SQLite in" + home)
+    	newStickyNoteApp = True
+    else:
+    	print ("No sqlite exist at " + home + ", using old sticky app SNT file location.")
+    	home = getSNTFilePath()
+    	newStickyNoteApp = False
 
     counter = 0
 
-    #print(streamList)
-    for streamIndex in range(len(streamList)):
-        # get zeroth streams
-        #print(streamIndex)
-        #print(len(streamList))
-        #print(streamList[streamIndex])
+    if newStickyNoteApp is True:
+    	conn = sqlite3.connect(home)
+    	c = conn.cursor()
+    	c.execute("SELECT Text FROM Note")
+    	all_rows = c.fetchall()
+    	for row in range(len(all_rows)):
+    		#print(all_rows[row][0].encode("utf-8"))
+    		#print(extract_rtf.striprtf(all_rows[row][0].encode("utf-8")))
+    		# base64 encode
+    		base64Encoded = base64.b64encode(extract_rtf.striprtf(all_rows[row][0].encode("utf-8")).encode('ascii'))
+    		sendNoteUpdate(base64Encoded, counter)
+    		counter = counter + 1
+    	if app is not None:
+		      app.infoLabel['text'] = "Detected new Windows 10 sticky notes format. Issues like disappearing line breaks may occur until I get time to figure it out. #nukeSchool"
+		      app.infoLabel['fg'] = 'yellow'
 
-        if (streamList[streamIndex])[len(streamList[streamIndex])
-            - 1:][0] is '0':
-            #print("valid stream with directory 0: "+ streamList[streamIndex])
-            # print(ole.get_size(streamList[streamIndex]))
+    else:
+	    try:
+	    	assert olefile.isOleFile(home)
+	    except (AssertionError,FileNotFoundError) as e:
+	    	root.deiconify()
+	    	if app is not None:
+		      app.infoLabel['text'] = "No Sticky Notes file found at " + home + " or " + getSQLiteFilePath() + ".\nYou need to run the Sticky Notes application for the first time to create a Sticky Notes file."
+		      app.infoLabel['fg'] = 'red'
+	      #bring app to foreground
+	      
 
-            # create file stream
-            handle = ole.openstream(streamList[streamIndex])
-            text = handle.read()
-            ole.close()
+	    ole = olefile.OleFileIO(home)
 
-            #find last index of actual closed bracket pair
-            textDecode = text.decode("utf-8")
-            openBracketsUnclosed = -1
-            for searchIndex in range(len(textDecode)):
-                if textDecode[searchIndex] == '{':
-                    if openBracketsUnclosed == -1:
-                        openBracketsUnclosed = 0
-                    openBracketsUnclosed += 1
-                if textDecode[searchIndex] == '}':
-                    openBracketsUnclosed -= 1
-                if openBracketsUnclosed == 0:
-                    #print(searchIndex)
-                    break;
-            # base64 encode
-            base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
-            #ascii preview with viewing as string so we can see newline and carriage return
-            #print(textDecode.encode('ascii'))
-            # create payload
-            payload = {
-                'user': username,
-                'passcode': passcode,
-                'number': counter,
-                'data': base64Encoded,
-                }
+	    streamList = ole.listdir()
 
-            try:
-                # make POST request with payload
-                r = requests.post(server+'/update',data=payload,timeout=5)
-                #print((r.status_code, r.reason))
-                if r.text[0:1] == '0':
-                    print(('Sent note at index {0} success'.format(counter)))
-                    app.infoLabel['text'] = 'Updated'
-                    app.infoLabel['fg'] = 'black'
-                    app.setUserPass['text'] = 'Update info'
-                    counter = counter + 1
+	    #print(streamList)
+	    for streamIndex in range(len(streamList)):
+	        # get zeroth streams
+	        #print(streamIndex)
+	        #print(len(streamList))
+	        #print(streamList[streamIndex])
 
+	        if (streamList[streamIndex])[len(streamList[streamIndex])
+	            - 1:][0] is '0':
+	            #print("valid stream with directory 0: "+ streamList[streamIndex])
+	            # print(ole.get_size(streamList[streamIndex]))
 
+	            # create file stream
+	            handle = ole.openstream(streamList[streamIndex])
+	            text = handle.read()
+	            ole.close()
 
-                else:
-                    print('Failed to update note at index {0} {0}'.format(counter, r.text))
-                    app.infoLabel['text'] = r.text
-                    app.infoLabel['fg'] = 'red'
-                    #bring app to foreground
-                    root.deiconify()
-                    return r.text
-            except requests.exceptions.RequestException as e:
-                #messagebox.showerror("Error sending request to " + server, e)
-                print(e)
-                return "Update to " + server + " failed"
+	            #find last index of actual closed bracket pair
+	            textDecode = text.decode("utf-8")
+	            openBracketsUnclosed = -1
+	            for searchIndex in range(len(textDecode)):
+	                if textDecode[searchIndex] == '{':
+	                    if openBracketsUnclosed == -1:
+	                        openBracketsUnclosed = 0
+	                    openBracketsUnclosed += 1
+	                if textDecode[searchIndex] == '}':
+	                    openBracketsUnclosed -= 1
+	                if openBracketsUnclosed == 0:
+	                    #print(searchIndex)
+	                    break;
+	            # base64 encode
+	            base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
+	            #ascii preview with viewing as string so we can see newline and carriage return
+	            #print(textDecode.encode('ascii'))
+	            sendNoteUpdate(base64Encoded, counter)
+	            counter = counter + 1
     return 0
 
 class Application(tk.Frame):
@@ -288,7 +330,6 @@ class Application(tk.Frame):
         if valid == 0:
             self.setUserPass['text'] = 'Update info'
 
-            
             #write user data
             credsFilepath = expanduser("~") + "\AppData\Roaming\sticky-creds"
             shelf = {}
