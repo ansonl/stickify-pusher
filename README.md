@@ -6,7 +6,8 @@ View your Microsoft Windows [Sticky Notes](http://windows.microsoft.com/en-us/wi
 
 ###### Code repositories on Github:  [Stickify Pusher](https://github.com/ansonl/stickify-pusher), [Stickify Server](https://github.com/ansonl/stickify-server), [Stickify web app](https://github.com/ansonl/stickify-web-app).
 
-- **Currently strips line breaks from Windows 10 anniversary update's new sticky notes app due a bug in RTF stripping code.**
+- **05FEB17 - Updated to work with new Windows 10 Anniversary Update Sticky Notes**
+	 - Stickify will detect which type of Sticky Notes you have and automatically use the newer Sticky Notes if you have notes in it.
 	 - To use old sticky notes app, please follow directions [here](http://www.winhelponline.com/blog/get-classic-sticky-notes-windows-10-anniversary/) AND delete/rename the new sticky notes app SQLite database file at `%USERPROFILE%\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\LocalState\plum.sqlite`.
 
 ↓ Stickify Pusher

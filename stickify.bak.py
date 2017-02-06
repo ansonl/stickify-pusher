@@ -67,24 +67,24 @@ def resource_path(relative_path):
 
 #total_changes only reflects changes made by your own connection so useless for detecting updates from Sticky Notes
 #def checkSqliteForChange():
-#    global sqliteConn
-#    global sqliteTotalChangesLast
-#    if sqliteConn is None:
-#        sqliteConn = sqlite3.connect(getSQLiteFilePath())
-#        sqliteTotalChangesLast = sqliteConn.total_changes
-#    else:
-#        if sqliteTotalChangesLast != sqliteConn.total_changes:
-#            sqliteTotalChangesLast = sqliteConn.total_changes
-#            updateUISendFile()
-#    print(sqliteTotalChangesLast)
-#    global sqlitePollTimer
-#    if sqlitePollTimer is not None:
-#        sqlitePollTimer.cancel()
-#    sqlitePollTimer = threading.Timer(5, lambda:checkSqliteForChange())
-#    sqlitePollTimer.start()
+#	global sqliteConn
+#	global sqliteTotalChangesLast
+#	if sqliteConn is None:
+#		sqliteConn = sqlite3.connect(getSQLiteFilePath())
+#		sqliteTotalChangesLast = sqliteConn.total_changes
+#	else:
+#		if sqliteTotalChangesLast != sqliteConn.total_changes:
+#			sqliteTotalChangesLast = sqliteConn.total_changes
+#			updateUISendFile()
+#	print(sqliteTotalChangesLast)
+#	global sqlitePollTimer
+#	if sqlitePollTimer is not None:
+#		sqlitePollTimer.cancel()
+#	sqlitePollTimer = threading.Timer(5, lambda:checkSqliteForChange())
+#	sqlitePollTimer.start()
 
 def pushSqliteNotesTimer():
-    updateUISendFile()
+	updateUISendFile()
 
 def pingServerToKeepAccount():
     print("Pinging server")
@@ -130,7 +130,7 @@ class WatchEventHandler(FileSystemEventHandler):
                 lastUpdated = datetime.datetime.now()
                 updateUISendFile()
             else:
-                #Wait 5 seconds after update so that we do not have a connection for each time the user types and updates
+            	#Wait 5 seconds after update so that we do not have a connection for each time the user types and updates
                 print("Last update < 5 seconds, will check back...")
                 
                 if lastUpdateCheckTimer is not None:
@@ -158,9 +158,9 @@ def getSNTFilePath():
     return getSNTDirectory() + "StickyNotes.snt"
 
 def getSQLiteDirectory():
-    home = expanduser("~")
-    home += "\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\LocalState\\"
-    return home
+	home = expanduser("~")
+	home += "\AppData\Local\Packages\Microsoft.MicrosoftStickyNotes_8wekyb3d8bbwe\LocalState\\"
+	return home
 
 def getSQLiteFilePath():
     return getSQLiteDirectory() + "plum.sqlite"
@@ -197,36 +197,36 @@ def updateUISendFile():
     pingServerTimer.start()
 
 def sendNoteUpdate(base64Encoded, counter):
-    # create payload
-    payload = {
-        'user': username,
-        'passcode': passcode,
-        'number': counter,
-        'data': base64Encoded,
-        }
+	# create payload
+	payload = {
+	    'user': username,
+	    'passcode': passcode,
+	    'number': counter,
+	    'data': base64Encoded,
+	    }
 
-    try:
-        # make POST request with payload
-        r = requests.post(server+'/update',data=payload,timeout=5)
-        #print((r.status_code, r.reason))
-        if r.text[0:1] == '0':
-            print(('Sent note at index {0} success'.format(counter)))
-            app.infoLabel['text'] = 'Updated'
-            app.infoLabel['fg'] = 'black'
-            app.setUserPass['text'] = 'Update info'
+	try:
+	    # make POST request with payload
+	    r = requests.post(server+'/update',data=payload,timeout=5)
+	    #print((r.status_code, r.reason))
+	    if r.text[0:1] == '0':
+	        print(('Sent note at index {0} success'.format(counter)))
+	        app.infoLabel['text'] = 'Updated'
+	        app.infoLabel['fg'] = 'black'
+	        app.setUserPass['text'] = 'Update info'
 
-        else:
-            print('Failed to update note at index {0} {0}'.format(counter, r.text))
-            app.infoLabel['text'] = r.text
-            app.infoLabel['fg'] = 'red'
-            #bring app to foreground
-            root.deiconify()
-            return r.text
-    except requests.exceptions.RequestException as e:
-        #messagebox.showerror("Error sending request to " + server, e)
-        print(e)
-        #server timeout on first note send prevented other notes from sending?
-        #return "Update to " + server + " failed"
+	    else:
+	        print('Failed to update note at index {0} {0}'.format(counter, r.text))
+	        app.infoLabel['text'] = r.text
+	        app.infoLabel['fg'] = 'red'
+	        #bring app to foreground
+	        root.deiconify()
+	        return r.text
+	except requests.exceptions.RequestException as e:
+	    #messagebox.showerror("Error sending request to " + server, e)
+		print(e)
+	    #server timeout on first note send prevented other notes from sending?
+	    #return "Update to " + server + " failed"
 
 def sendFile():
 
@@ -237,111 +237,111 @@ def sendFile():
     newStickyNoteApp = None
     home = getSQLiteFilePath()
     if os.path.exists(home):
-        print("Found new sticky notes SQLite in" + home)
-        newStickyNoteApp = True
+	print("Found new sticky notes SQLite in" + home)
+	newStickyNoteApp = True
         global sqlitePollTimer
-        if sqlitePollTimer is not None:
-            sqlitePollTimer.cancel()
-        sqlitePollTimer = threading.Timer(5, lambda:pushSqliteNotesTimer())
-        sqlitePollTimer.start()
+	if sqlitePollTimer is not None:
+	    sqlitePollTimer.cancel()
+	sqlitePollTimer = threading.Timer(5, lambda:pushSqliteNotesTimer())
+	sqlitePollTimer.start()
     else:
-        print ("No sqlite exist at " + home + ", using old sticky app SNT file location.")
-        home = getSNTFilePath()
-        newStickyNoteApp = False
+    	print ("No sqlite exist at " + home + ", using old sticky app SNT file location.")
+    	home = getSNTFilePath()
+    	newStickyNoteApp = False
 
     counter = 0
 
     if newStickyNoteApp is True:
-        conn = sqlite3.connect(home)
-        c = conn.cursor()
-        c.execute("SELECT Text FROM Note")
-        all_rows = c.fetchall()
-        for row in range(len(all_rows)):
-            #print(all_rows[row][0].encode("utf-8"))
-            #print(extract_rtf.striprtf(all_rows[row][0].encode("utf-8")))
-            noteSource = all_rows[row][0]
+    	conn = sqlite3.connect(home)
+    	c = conn.cursor()
+    	c.execute("SELECT Text FROM Note")
+    	all_rows = c.fetchall()
+    	for row in range(len(all_rows)):
+    		#print(all_rows[row][0].encode("utf-8"))
+    		#print(extract_rtf.striprtf(all_rows[row][0].encode("utf-8")))
+    		noteSource = all_rows[row][0]
 
-            #strip RTF
-            noteStripped = extract_rtf.striprtf(noteSource.encode("utf-8"))
+    		#strip RTF
+    		noteStripped = extract_rtf.striprtf(noteSource.encode("utf-8"))
 
-            noteOriginal = noteSource
-            noteFinalList = []
-            cio = 0
-            #print("Original:" + noteOriginal)
-            #print("Stripped:" + noteStripped)
-            #For each character in the stripped text, we move through the original text, looking for the newlines that were stripped and construct a character array with the stripped text AND the original newline in the correct order.
-            for cis in range(len(noteStripped)):
-                while noteStripped[cis] != noteOriginal[cio]:
-                    if noteOriginal[cio] == '\n':
-                        noteFinalList.append('\n')
-                    cio = cio + 1
-                #when noteOriginal matches noteStripped's character    
-                noteFinalList.append(noteStripped[cis])
-                cio = cio + 1
+    		noteOriginal = noteSource
+    		noteFinalList = []
+    		cio = 0
+    		#print("Original:" + noteOriginal)
+    		#print("Stripped:" + noteStripped)
+    		#For each character in the stripped text, we move through the original text, looking for the newlines that were stripped and construct a character array with the stripped text AND the original newline in the correct order.
+    		for cis in range(len(noteStripped)):
+    			while noteStripped[cis] != noteOriginal[cio]:
+    				if noteOriginal[cio] == '\n':
+    					noteFinalList.append('\n')
+    				cio = cio + 1
+    			#when noteOriginal matches noteStripped's character	
+    			noteFinalList.append(noteStripped[cis])
+    			cio = cio + 1
 
-            #Python string joining from https://waymoot.org/home/python_string/
-            noteFinal = ''.join(noteFinalList)
+    		#Python string joining from https://waymoot.org/home/python_string/
+    		noteFinal = ''.join(noteFinalList)
 
-            print("Final:" + noteFinal)
+    		print("Final:" + noteFinal)
 
-            #base64 encode
-            base64Encoded = base64.b64encode(noteFinal.encode('ascii'))
-            sendNoteUpdate(base64Encoded, counter)
-            counter = counter + 1
-        
-        conn.close()
+    		#base64 encode
+    		base64Encoded = base64.b64encode(noteFinal.encode('ascii'))
+    		sendNoteUpdate(base64Encoded, counter)
+    		counter = counter + 1
+    	
+    	conn.close()
 
     else:
-        try:
-            assert olefile.isOleFile(home)
-        except (AssertionError,FileNotFoundError) as e:
-            root.deiconify()
-            if app is not None:
-              app.infoLabel['text'] = "No Sticky Notes file found at " + home + " or " + getSQLiteFilePath() + ".\nYou need to run the Sticky Notes application for the first time to create a Sticky Notes file."
-              app.infoLabel['fg'] = 'red'
-          #bring app to foreground
-          
+	    try:
+	    	assert olefile.isOleFile(home)
+	    except (AssertionError,FileNotFoundError) as e:
+	    	root.deiconify()
+	    	if app is not None:
+		      app.infoLabel['text'] = "No Sticky Notes file found at " + home + " or " + getSQLiteFilePath() + ".\nYou need to run the Sticky Notes application for the first time to create a Sticky Notes file."
+		      app.infoLabel['fg'] = 'red'
+	      #bring app to foreground
+	      
 
-        ole = olefile.OleFileIO(home)
+	    ole = olefile.OleFileIO(home)
 
-        streamList = ole.listdir()
+	    streamList = ole.listdir()
 
-        #print(streamList)
-        for streamIndex in range(len(streamList)):
-            # get zeroth streams
-            #print(streamIndex)
-            #print(len(streamList))
-            #print(streamList[streamIndex])
+	    #print(streamList)
+	    for streamIndex in range(len(streamList)):
+	        # get zeroth streams
+	        #print(streamIndex)
+	        #print(len(streamList))
+	        #print(streamList[streamIndex])
 
-            if (streamList[streamIndex])[len(streamList[streamIndex])
-                - 1:][0] is '0':
-                #print("valid stream with directory 0: "+ streamList[streamIndex])
-                # print(ole.get_size(streamList[streamIndex]))
+	        if (streamList[streamIndex])[len(streamList[streamIndex])
+	            - 1:][0] is '0':
+	            #print("valid stream with directory 0: "+ streamList[streamIndex])
+	            # print(ole.get_size(streamList[streamIndex]))
 
-                # create file stream
-                handle = ole.openstream(streamList[streamIndex])
-                text = handle.read()
-                ole.close()
+	            # create file stream
+	            handle = ole.openstream(streamList[streamIndex])
+	            text = handle.read()
+	            ole.close()
 
-                #find last index of actual closed bracket pair
-                textDecode = text.decode("utf-8")
-                openBracketsUnclosed = -1
-                for searchIndex in range(len(textDecode)):
-                    if textDecode[searchIndex] == '{':
-                        if openBracketsUnclosed == -1:
-                            openBracketsUnclosed = 0
-                        openBracketsUnclosed += 1
-                    if textDecode[searchIndex] == '}':
-                        openBracketsUnclosed -= 1
-                    if openBracketsUnclosed == 0:
-                        #print(searchIndex)
-                        break;
-                # base64 encode
-                base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
-                #ascii preview with viewing as string so we can see newline and carriage return
-                #print(textDecode.encode('ascii'))
-                sendNoteUpdate(base64Encoded, counter)
-                counter = counter + 1
+	            #find last index of actual closed bracket pair
+	            textDecode = text.decode("utf-8")
+	            openBracketsUnclosed = -1
+	            for searchIndex in range(len(textDecode)):
+	                if textDecode[searchIndex] == '{':
+	                    if openBracketsUnclosed == -1:
+	                        openBracketsUnclosed = 0
+	                    openBracketsUnclosed += 1
+	                if textDecode[searchIndex] == '}':
+	                    openBracketsUnclosed -= 1
+	                if openBracketsUnclosed == 0:
+	                    #print(searchIndex)
+	                    break;
+	            # base64 encode
+	            base64Encoded = base64.b64encode(extract_rtf.striprtf(textDecode[textDecode.find("{"):searchIndex+1].encode("utf-8")).encode('ascii'))
+	            #ascii preview with viewing as string so we can see newline and carriage return
+	            #print(textDecode.encode('ascii'))
+	            sendNoteUpdate(base64Encoded, counter)
+	            counter = counter + 1
     return 0
 
 class Application(tk.Frame):
@@ -489,8 +489,8 @@ observer.join()
 
 #Close sqlite connection
 #if sqliteConn is not None:
-#    sqliteConn.close()
+#	sqliteConn.close()
 if sqlitePollTimer is not None:
-    sqlitePollTimer.cancel()
+	sqlitePollTimer.cancel()
 
 print("App quit")
